@@ -198,7 +198,10 @@ async function loadAnnouncement(containerId) {
   if (!container) return;
 
   try {
-    const res = await fetch('http://localhost:5000/api/announcement');
+    const origin = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') || window.location.origin.includes('5500')
+      ? 'http://localhost:5000'
+      : window.location.origin;
+    const res = await fetch(`${origin}/api/announcement`);
     const data = await res.json();
     if (data.success && data.data) {
       container.innerHTML = `

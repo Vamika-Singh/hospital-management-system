@@ -2,7 +2,10 @@
    API - Centralized fetch wrapper
    ============================================================ */
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') || window.location.origin.includes('5500')
+  ? 'http://localhost:5000/api'
+  : `${window.location.origin}/api`;
+
 
 function getCorrectUrl(path) {
   const prefix = window.location.pathname.startsWith('/frontend') ? '/frontend' : '';
