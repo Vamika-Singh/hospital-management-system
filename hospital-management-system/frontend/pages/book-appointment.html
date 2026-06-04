@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Appointment — MediCare</title>
+  <meta name="description" content="Book an appointment with your chosen doctor. Select a date and available time slot." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <style>
+    .book-page { padding-top: calc(var(--header-height) + 40px); padding-bottom: 60px; }
+
+    .book-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .doctor-summary {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      position: sticky;
+      top: calc(var(--header-height) + 20px);
+    }
+
+    .doc-sum-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .doc-sum-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-light), var(--accent-light));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+    }
+
+    .doc-sum-name { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+    .doc-sum-spec { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 2px; }
+
+    .doc-sum-info { display: flex; flex-direction: column; gap: 8px; }
+
+    .doc-sum-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .doc-sum-row .label { color: var(--text-secondary); }
+    .doc-sum-row .value { color: var(--text-primary); font-weight: 600; }
+
+    .selected-summary {
+      background: var(--primary-glow);
+      border: 1px solid rgba(14,165,233,0.2);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .selected-summary.show { display: block; }
+    .selected-summary h4 { font-size: 13px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+    .selected-summary p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+    .step-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .step-num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      flex-shrink: 0;
+    }
+
+    .step-num.done { background: var(--success); }
+
+    .step-title-text { font-size: 16px; font-weight: 700; color: var(--text-primary); font-family: 'Outfit', sans-serif; }
+
+    .slots-loading { text-align: center; padding: 30px; color: var(--text-secondary); font-size: 14px; }
+    .slots-info { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+
+    @media (max-width: 900px) {
+      .book-grid { grid-template-columns: 1fr; }
+      .doctor-summary { position: static; order: -1; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+  <div id="toast-container"></div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Confirm Appointment</div>
+        <button class="modal-close" onclick="closeModal('confirm-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary); font-size:14px; margin-bottom:16px;">Please review your appointment details before confirming:</p>
+        <div id="confirm-details" style="background:var(--bg-base); border-radius:var(--radius-sm); padding:16px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('confirm-modal')">Go Back</button>
+        <button class="btn btn-primary" id="confirm-book-btn" style="display:inline-flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Confirm Booking
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main class="book-page">
+    <div class="container">
+      <div style="margin-bottom:28px;">
+        <a href="/pages/doctors.html" style="font-size:13px; color:var(--text-secondary);">← Back to Doctors</a>
+        <h1 style="font-size:28px; margin-top:12px;">Book an <span class="gradient-text">Appointment</span></h1>
+      </div>
+
+      <div class="book-grid">
+        <!-- LEFT: Form -->
+        <div>
+          <!-- Step 1: Date -->
+          <div class="step-section">
+            <div class="step-header">
+              <div class="step-num" id="step1-num">1</div>
+              <div class="step-title-text">Select Appointment Date</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" for="appointment-date">Choose a Date</label>
+              <input type="date" id="appointment-date" class="form-control" style="max-width:280px;" />
+              <div class="form-hint">Only the doctor's available days are shown.</div>
+            </div>
+          </div>
+
+          <!-- Step 2: Time Slot -->
+          <div class="step-section">
+            <div class="step-header">
+              <div class="step-num" id="step2-num">2</div>
+              <div class="step-title-text">Select Time Slot</div>
+            </div>
+            <div class="slots-info" id="slots-info">Please select a date first to see available slots.</div>
+            <div id="slots-container"></div>
+          </div>
+
+          <!-- Step 3: Reason -->
+          <div class="step-section">
+            <div class="step-header">
+              <div class="step-num" id="step3-num">3</div>
+              <div class="step-title-text">Reason for Visit (Optional)</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <textarea id="reason" class="form-control" placeholder="Describe your symptoms or reason for the appointment..." rows="3"></textarea>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg" id="book-btn" style="display:inline-flex;align-items:center;gap:8px;" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            Review & Book Appointment
+          </button>
+        </div>
+
+        <!-- RIGHT: Summary -->
+        <div>
+          <div class="doctor-summary" id="doctor-summary">
+            <div class="loader"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    let doctor = null;
+    let selectedSlot = null;
+    let selectedDate = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      requirePatientLogin();
+      renderNavbar();
+
+      const params = new URLSearchParams(window.location.search);
+      const doctorId = params.get('doctor');
+      if (!doctorId) { window.location.href = getCorrectUrl('/pages/doctors.html'); return; }
+
+      await loadDoctor(doctorId);
+
+      // Set min date to today
+      document.getElementById('appointment-date').min = getMinDate();
+
+      document.getElementById('appointment-date').addEventListener('change', (e) => {
+        selectedDate = e.target.value;
+        selectedSlot = null;
+        updateBookBtn();
+        if (selectedDate) loadSlots(doctorId, selectedDate);
+      });
+    });
+
+    async function loadDoctor(id) {
+      const res = await api.get(`/doctors/${id}`);
+      if (!res || !res.success) {
+        document.getElementById('doctor-summary').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger); opacity:0.8; margin:0 auto 16px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div><h3>Doctor not found</h3></div>';
+        return;
+      }
+
+      doctor = res.data;
+      const initials = doctor.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('');
+      const days = doctor.available_days ? doctor.available_days.split(',') : [];
+
+      document.getElementById('doctor-summary').innerHTML = `
+        <div class="doc-sum-top">
+          <div class="doc-sum-avatar" style="font-size:16px; font-weight:700; color:var(--primary); background:var(--primary-light);">${initials}</div>
+          <div>
+            <div class="doc-sum-name">${doctor.name}</div>
+            <div class="doc-sum-spec">${doctor.specialization}</div>
+          </div>
+        </div>
+        <div class="doc-sum-info">
+          <div class="doc-sum-row"><span class="label">Qualification</span><span class="value">${doctor.qualification || 'MBBS'}</span></div>
+          <div class="doc-sum-row"><span class="label">Experience</span><span class="value">${doctor.experience_years} years</span></div>
+          <div class="doc-sum-row"><span class="label">Available Days</span><span class="value">${days.join(', ')}</span></div>
+          <div class="doc-sum-row"><span class="label">Slot Duration</span><span class="value">${doctor.slot_duration} mins</span></div>
+          <div class="doc-sum-row" style="margin-top:8px;"><span class="label" style="font-size:15px;">Consultation Fee</span><span class="value" style="font-size:18px;color:var(--success);">₹${parseFloat(doctor.fee).toFixed(0)}</span></div>
+        </div>
+        <div class="selected-summary" id="selected-summary">
+          <h4 style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg> Selected Slot</h4>
+          <p id="selected-summary-text" style="margin-top:6px;"></p>
+        </div>
+      `;
+    }
+
+    async function loadSlots(doctorId, date) {
+      const container = document.getElementById('slots-container');
+      const info = document.getElementById('slots-info');
+      container.innerHTML = '<div class="slots-loading">⏳ Loading available slots...</div>';
+      info.textContent = '';
+
+      const res = await api.get(`/doctors/${doctorId}/slots?date=${date}`);
+
+      if (!res || !res.success) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger); opacity:0.8; margin:0 auto 16px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div><h3>Failed to load slots</h3></div>';
+        return;
+      }
+
+      const { slots, message } = res.data;
+
+      if (message && slots.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); opacity:0.6; margin:0 auto 16px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div><h3>${message}</h3></div>`;
+        return;
+      }
+
+      if (slots.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); opacity:0.6; margin:0 auto 16px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div><h3>No slots available</h3><p>All slots are booked for this date.</p></div>';
+        return;
+      }
+
+      const available = slots.filter(s => s.available).length;
+      info.textContent = `${available} of ${slots.length} slots available for ${formatDate(date)}`;
+
+      document.getElementById('step2-num').classList.add('done');
+
+      container.innerHTML = `<div class="slots-grid">${
+        slots.map(slot => `
+          <button class="slot-btn ${slot.available ? 'available' : 'booked'}" 
+                  onclick="${slot.available ? `selectSlot('${slot.time}', '${slot.displayTime}')` : ''}"
+                  id="slot-${slot.time.replace(/:/g,'')}">
+            ${slot.displayTime}
+          </button>
+        `).join('')
+      }</div>`;
+    }
+
+    function selectSlot(time, displayTime) {
+      selectedSlot = time;
+      // Remove selected from all
+      document.querySelectorAll('.slot-btn.selected').forEach(b => b.classList.remove('selected'));
+      const btn = document.getElementById(`slot-${time.replace(/:/g,'')}`);
+      if (btn) btn.classList.add('selected');
+
+      const summary = document.getElementById('selected-summary');
+      const text = document.getElementById('selected-summary-text');
+      if (summary && text) {
+        text.textContent = `${formatDate(selectedDate)} at ${displayTime}`;
+        summary.classList.add('show');
+      }
+      document.getElementById('step3-num').classList.add('done');
+      updateBookBtn();
+    }
+
+    function updateBookBtn() {
+      const btn = document.getElementById('book-btn');
+      btn.disabled = !(selectedDate && selectedSlot);
+    }
+
+    document.getElementById('book-btn').addEventListener('click', () => {
+      if (!selectedDate || !selectedSlot) return;
+
+      const details = document.getElementById('confirm-details');
+      details.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-secondary);">Doctor</span><strong>${doctor.name}</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-secondary);">Specialization</span><strong>${doctor.specialization}</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-secondary);">Date</span><strong>${formatDate(selectedDate)}</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-secondary);">Time</span><strong>${formatTime(selectedSlot)}</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-secondary);">Fee</span><strong style="color:var(--success)">₹${parseFloat(doctor.fee).toFixed(0)}</strong></div>
+        </div>
+      `;
+      openModal('confirm-modal');
+    });
+
+    document.getElementById('confirm-book-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('confirm-book-btn');
+      btn.classList.add('btn-loading');
+      btn.disabled = true;
+
+      const params = new URLSearchParams(window.location.search);
+      const reason = document.getElementById('reason').value.trim();
+
+      const res = await api.post('/appointments', {
+        doctor_id: parseInt(params.get('doctor')),
+        appointment_date: selectedDate,
+        appointment_time: selectedSlot,
+        reason
+      }, true);
+
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      closeModal('confirm-modal');
+
+      if (res && res.success) {
+        showToast('success', 'Appointment Booked', `Your appointment ID is #${res.data.appointment_id}. Check your dashboard to track status.`, 6000);
+        setTimeout(() => window.location.href = getCorrectUrl('/pages/patient-dashboard.html'), 2500);
+      } else {
+        showToast('error', 'Booking Failed', res?.message || 'Could not book appointment. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>

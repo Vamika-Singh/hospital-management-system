@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find Doctors — MediCare</title>
+  <meta name="description" content="Browse and filter MediCare's experienced doctors by specialization and book appointments instantly." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <style>
+    .doctors-page { padding-top: calc(var(--header-height) + 40px); padding-bottom: 60px; }
+
+    .doctors-header { margin-bottom: 36px; }
+    .doctors-header h1 { font-size: clamp(28px, 4vw, 42px); margin-bottom: 12px; }
+    .doctors-header p { color: var(--text-secondary); font-size: 16px; }
+
+    .doctors-filters {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+    }
+
+    .spec-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .doctors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    #results-count {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    #results-count strong { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+  <div id="toast-container"></div>
+
+  <main class="doctors-page">
+    <div class="container">
+      <div class="doctors-header">
+        <div class="section-label">Find Specialists</div>
+        <h1>Our Expert <span class="gradient-text">Medical Team</span></h1>
+        <p>Browse our experienced doctors and book your appointment instantly</p>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="doctors-filters">
+        <span class="filter-label">Search:</span>
+        <div class="search-bar" style="flex:1; max-width:320px;">
+          <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:2px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
+          <input type="text" id="search-input" placeholder="Doctor name or specialization..." />
+        </div>
+        <span class="filter-label">Filter:</span>
+        <div class="spec-filters" id="spec-filters">
+          <button class="filter-chip active" data-spec="all" id="filter-all">All Doctors</button>
+        </div>
+      </div>
+
+      <div id="results-count"></div>
+
+      <!-- Doctors Grid -->
+      <div id="doctors-grid" class="doctors-grid">
+        <div class="loader"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    let allDoctors = [];
+    let activeSpec = 'all';
+    let searchTerm = '';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderNavbar();
+
+      // Check URL param for specialization filter
+      const params = new URLSearchParams(window.location.search);
+      const specParam = params.get('spec');
+      if (specParam) activeSpec = specParam;
+
+      await loadSpecializations();
+      await loadDoctors();
+    });
+
+    async function loadSpecializations() {
+      const res = await api.get('/doctors/specializations');
+      if (!res || !res.success) return;
+
+      const container = document.getElementById('spec-filters');
+      res.data.forEach(spec => {
+        const btn = document.createElement('button');
+        btn.className = `filter-chip ${activeSpec === spec ? 'active' : ''}`;
+        btn.dataset.spec = spec;
+        btn.textContent = spec;
+        btn.addEventListener('click', () => filterBySpec(spec));
+        container.appendChild(btn);
+      });
+
+      if (activeSpec !== 'all') {
+        document.getElementById('filter-all')?.classList.remove('active');
+      }
+    }
+
+    async function loadDoctors() {
+      const grid = document.getElementById('doctors-grid');
+      grid.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (activeSpec !== 'all') params.append('specialization', activeSpec);
+
+      const res = await api.get(`/doctors?${params.toString()}`);
+
+      if (!res || !res.success) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger); opacity:0.8; margin: 0 auto 16px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div><h3>Failed to load doctors</h3><p>Please check if the server is running.</p></div>';
+        return;
+      }
+
+      allDoctors = res.data;
+      renderDoctors(allDoctors);
+    }
+
+    function renderDoctors(doctors) {
+      const grid = document.getElementById('doctors-grid');
+      const count = document.getElementById('results-count');
+
+      count.innerHTML = `Showing <strong>${doctors.length}</strong> doctor${doctors.length !== 1 ? 's' : ''}`;
+
+      if (doctors.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); opacity:0.6; margin: 0 auto 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+            <h3>No doctors found</h3>
+            <p>Try a different search term or specialization filter.</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = doctors.map(doc => {
+        const days = doc.available_days ? doc.available_days.split(',') : [];
+        const initials = doc.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('');
+        return `
+          <div class="doctor-card animate-fade-in">
+            <div class="doctor-avatar" style="font-size:16px; font-weight:700; color:var(--primary); background:var(--primary-light);">${initials}</div>
+            <div class="doctor-name">${doc.name}</div>
+            <div class="doctor-spec">${doc.specialization}</div>
+            <div class="doctor-meta">
+              <div class="doctor-meta-item">
+                <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg></span>
+                <span>${doc.qualification || 'MBBS'}</span>
+              </div>
+              <div class="doctor-meta-item">
+                <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span>
+                <span>${doc.experience_years} years experience</span>
+              </div>
+              <div class="doctor-meta-item">
+                <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>
+                <span>${formatTime(doc.slot_start)} – ${formatTime(doc.slot_end)}</span>
+              </div>
+            </div>
+            <div class="doctor-days">
+              ${days.map(d => `<span class="day-pill">${d}</span>`).join('')}
+            </div>
+            ${doc.bio ? `<p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${doc.bio}</p>` : ''}
+            <div class="doctor-footer">
+              <div class="doctor-fee">₹${parseFloat(doc.fee).toFixed(0)} <span>/ visit</span></div>
+              <a href="/pages/book-appointment.html?doctor=${doc.id}" class="btn btn-primary btn-sm" id="book-btn-${doc.id}">
+                Book Now →
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterBySpec(spec) {
+      activeSpec = spec;
+      document.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.spec === spec);
+      });
+      loadDoctors();
+    }
+
+    document.getElementById('filter-all').addEventListener('click', () => filterBySpec('all'));
+
+    // Live search with debounce
+    let searchTimeout;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      searchTerm = e.target.value.trim();
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => loadDoctors(), 350);
+    });
+  </script>
+</body>
+</html>

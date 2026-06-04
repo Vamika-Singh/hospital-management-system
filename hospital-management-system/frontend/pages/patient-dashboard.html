@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Dashboard — MediCare</title>
+  <meta name="description" content="View and manage your MediCare appointments and profile." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .tab-nav { display:flex; gap:4px; background:var(--bg-base); border-radius:var(--radius-sm); padding:4px; border:1px solid var(--border); margin-bottom:28px; width:fit-content; }
+    .tab-btn { padding:8px 20px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; border:none; background:transparent; color:var(--text-secondary); transition:var(--transition); }
+    .tab-btn.active { background:var(--bg-elevated); color:var(--text-primary); }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    .appt-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; margin-bottom:14px; transition:var(--transition); }
+    .appt-card:hover { border-color:rgba(14,165,233,0.2); }
+    .appt-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+    .appt-doctor { font-size:16px; font-weight:700; color:var(--text-primary); font-family:'Outfit',sans-serif; }
+    .appt-spec { font-size:12px; color:var(--primary); font-weight:600; margin-top:2px; }
+    .appt-meta { display:flex; gap:16px; flex-wrap:wrap; }
+    .appt-meta-item { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-secondary); }
+    .appt-footer { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-light); }
+    .appt-id { font-size:12px; color:var(--text-muted); }
+    .appt-reason { font-size:13px; color:var(--text-secondary); margin-top:8px; font-style:italic; }
+
+    /* EHR Timeline & timeline checklist styling */
+    .ehr-timeline { display:flex; flex-direction:column; gap:18px; margin-top:20px; }
+    .timeline-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:14px; }
+    .timeline-title-row { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-light); padding-bottom:12px; }
+    .timeline-body-row { display:flex; gap:24px; flex-wrap:wrap; }
+    .timeline-diag-section { flex:1; min-width:220px; }
+    .timeline-rx-section { flex:1.5; min-width:280px; background:var(--bg-elevated); padding:18px; border-radius:var(--radius-sm); border:1px solid var(--border); }
+    
+    /* Checklist Progress */
+    .dosage-progress-container { margin-bottom:16px; background:var(--bg-card); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border); }
+    .dosage-progress-bar-container { height:6px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:8px; }
+    .dosage-progress-bar-fill { height:100%; background:var(--success); transition:var(--transition); width:0%; }
+    
+    .med-checklist { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+    .med-check-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; cursor:pointer; transition:var(--transition-fast); user-select:none; }
+    .med-check-item:hover { border-color:var(--success); background:var(--primary-50); }
+    .med-check-item.checked { border-color:var(--success); background:rgba(5,150,105,0.03); }
+    .med-check-label { display:flex; flex-direction:column; }
+    .med-check-name { font-weight:600; color:var(--text-primary); font-size:13px; }
+    .med-check-sched { font-size:11px; color:var(--text-secondary); margin-top:1px; }
+    
+    .check-circle { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; transition:var(--transition-fast); }
+    .med-check-item.checked .check-circle { background:var(--success); border-color:var(--success); color:white; }
+    .check-circle svg { display:none; width:10px; height:8px; stroke:currentColor; stroke-width:3; stroke-linecap:round; fill:none; }
+    .med-check-item.checked .check-circle svg { display:block; }
+
+    /* Invoices grid */
+    .invoice-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:20px; margin-top:20px; }
+    .invoice-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; display:flex; flex-direction:column; justify-content:space-between; min-height:190px; box-shadow:var(--shadow-sm); transition:var(--transition); }
+    .invoice-card:hover { border-color:var(--primary); box-shadow:var(--shadow); }
+    .invoice-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+    .invoice-card-id { font-size:15px; font-weight:700; color:var(--text-primary); font-family:'Outfit',sans-serif; }
+    .invoice-card-amount { font-size:26px; font-weight:800; color:var(--text-primary); font-family:'Outfit',sans-serif; margin:10px 0; }
+    
+    /* Realistic Printable Thermal Receipt card inside Modal */
+    .receipt-print-wrapper { background:#ffffff; color:#1e293b; padding:24px; border-radius:4px; font-family:'Courier New', Courier, monospace; font-size:13px; border:1px dashed #cbd5e1; box-shadow:0 0 10px rgba(0,0,0,0.02); max-width:400px; margin:0 auto; line-height:1.4; }
+    .receipt-header { text-align:center; margin-bottom:20px; }
+    .receipt-logo { font-size:22px; font-weight:800; font-family:'Outfit',sans-serif; letter-spacing:1px; margin-bottom:4px; color:var(--primary); }
+    .receipt-divider { border-top:1px dashed #94a3b8; margin:12px 0; }
+    .receipt-row { display:flex; justify-content:space-between; margin-bottom:6px; }
+    .receipt-table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .receipt-table th { border-bottom:1px dashed #94a3b8; padding-bottom:6px; font-weight:700; text-align:left; }
+    .receipt-table td { padding:6px 0; }
+    .receipt-footer { text-align:center; margin-top:20px; font-size:11px; color:#64748b; }
+    
+    /* Payment terminal modal styles */
+    .payment-terminal { display:flex; flex-direction:column; gap:16px; align-items:center; text-align:center; padding:10px 0; }
+    .payment-card-icon { width:60px; height:40px; border-radius:4px; background:#1e293b; display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:bold; }
+    
+    /* Glowing Vital Telemetry Styles */
+    .vitals-telemetry-container {
+      margin-bottom: 28px;
+      background: #0f172a;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+      overflow: hidden;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+    }
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+    .vital-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 14px 16px;
+      border-radius: 8px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .vital-card.beat {
+      background: rgba(244, 63, 94, 0.08) !important;
+      border-color: rgba(244, 63, 94, 0.3) !important;
+      transform: scale(1.02);
+    }
+    .heart-pulse-icon {
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform-origin: center;
+    }
+    .heart-pulse-icon.beat {
+      transform: scale(1.35);
+    }
+    @media (max-width: 900px) {
+      .telemetry-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Print media overrides */
+    @media print {
+      body * { display: none !important; }
+      #receipt-print-area, #receipt-print-area * { display: block !important; }
+      #receipt-print-area { position: absolute; left: 0; top: 0; width: 100%; max-width: 100%; background: white !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; }
+      .receipt-row { display: flex !important; justify-content: space-between !important; }
+      .receipt-table { display: table !important; width: 100% !important; }
+      .receipt-table tr { display: table-row !important; }
+      .receipt-table th { display: table-cell !important; }
+      .receipt-table td { display: table-cell !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/pages/index.html" class="sidebar-brand">
+          <div class="sidebar-brand-icon" style="width: 32px; height: 32px;"><svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#1a56db"/><path d="M20 10v20M10 20h20" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="20" cy="20" r="14" stroke="#60a5fa" stroke-width="1.5" opacity=".4"/></svg></div>
+          <span class="sidebar-brand-name">MediCare</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Menu</div>
+          <a href="#" class="sidebar-link active" id="link-appointments" onclick="showTab('appointments')">
+            <span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> My Appointments
+          </a>
+          <a href="#" class="sidebar-link" id="link-ehr" onclick="showTab('ehr')">
+            <span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> Clinical History (EHR)
+          </a>
+          <a href="#" class="sidebar-link" id="link-billing" onclick="showTab('billing')">
+            <span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg></span> Billing & Receipts
+          </a>
+          <a href="#" class="sidebar-link" id="link-profile" onclick="showTab('profile')">
+            <span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> My Profile
+          </a>
+          <a href="/pages/doctors.html" class="sidebar-link">
+            <span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span> Find Doctors
+          </a>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar" id="sidebar-avatar">?</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name" id="sidebar-name">Loading...</div>
+            <div class="sidebar-user-role">Patient</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary w-full btn-sm" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;" onclick="logout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          Logout
+        </button>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main -->
+    <main class="dashboard-main">
+      <div class="dashboard-topbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+          <div class="topbar-title" id="topbar-title">My Appointments</div>
+        </div>
+        <div class="topbar-actions">
+          <a href="/pages/doctors.html" class="btn btn-primary btn-sm">+ Book Appointment</a>
+        </div>
+      </div>
+
+      <div class="dashboard-content">
+        <!-- Live Bed Stay stay banner -->
+        <div id="active-bed-banner" style="margin-bottom: 24px;"></div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="patient-stats">
+          <div class="stat-card">
+            <div class="stat-icon blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="stat-info"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Total Booked</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div class="stat-info"><div class="stat-value" id="stat-pending">—</div><div class="stat-label">Pending</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div class="stat-info"><div class="stat-value" id="stat-completed">—</div><div class="stat-label">Completed</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            </div>
+            <div class="stat-info"><div class="stat-value" id="stat-cancelled">—</div><div class="stat-label">Cancelled</div></div>
+          </div>
+        </div>
+
+        <!-- Patient Appointment Summary Card -->
+        <div class="card animate-fade-in" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(26,86,219,0.06) 0%, rgba(13,148,136,0.04) 100%); border: 1px solid rgba(26,86,219,0.12);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              </div>
+              <div>
+                <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--text-primary);">My Appointment Summary</h3>
+                <p style="margin:0; font-size:12px; color:var(--text-secondary);">Live counts from your booking history</p>
+              </div>
+            </div>
+            <span id="summary-last-updated" style="font-size:11px; color:var(--text-muted);">Loading...</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;" id="appt-summary-grid">
+            <div style="background:var(--bg-elevated); border:1px solid var(--border-light); border-radius:10px; padding:16px; text-align:center;">
+              <div style="font-size:28px; font-weight:800; color:var(--primary); font-family:'Outfit',sans-serif;" id="summary-total">—</div>
+              <div style="font-size:11px; color:var(--text-secondary); margin-top:4px; font-weight:600;">Total Bookings</div>
+            </div>
+            <div style="background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.15); border-radius:10px; padding:16px; text-align:center;">
+              <div style="font-size:28px; font-weight:800; color:#eab308; font-family:'Outfit',sans-serif;" id="summary-pending">—</div>
+              <div style="font-size:11px; color:var(--text-secondary); margin-top:4px; font-weight:600;">Upcoming</div>
+            </div>
+            <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.15); border-radius:10px; padding:16px; text-align:center;">
+              <div style="font-size:28px; font-weight:800; color:#10b981; font-family:'Outfit',sans-serif;" id="summary-completed">—</div>
+              <div style="font-size:11px; color:var(--text-secondary); margin-top:4px; font-weight:600;">Completed</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.12); border-radius:10px; padding:16px; text-align:center;">
+              <div style="font-size:28px; font-weight:800; color:#ef4444; font-family:'Outfit',sans-serif;" id="summary-cancelled">—</div>
+              <div style="font-size:11px; color:var(--text-secondary); margin-top:4px; font-weight:600;">Cancelled</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+          <button class="tab-btn active" id="tab-appointments" onclick="showTab('appointments')">Appointments</button>
+          <button class="tab-btn" id="tab-ehr" onclick="showTab('ehr')">Clinical History (EHR)</button>
+          <button class="tab-btn" id="tab-billing" onclick="showTab('billing')">Billing & Receipts</button>
+          <button class="tab-btn" id="tab-profile" onclick="showTab('profile')">Profile</button>
+        </div>
+
+        <!-- Appointments Tab -->
+        <div class="tab-content active" id="content-appointments">
+          <div class="filter-bar" style="margin-bottom:20px;">
+            <span style="font-size:13px;color:var(--text-secondary);">Filter:</span>
+            <button class="filter-chip active" data-filter="all" onclick="filterAppts('all')">All</button>
+            <button class="filter-chip" data-filter="pending" onclick="filterAppts('pending')">Pending</button>
+            <button class="filter-chip" data-filter="confirmed" onclick="filterAppts('confirmed')">Confirmed</button>
+            <button class="filter-chip" data-filter="completed" onclick="filterAppts('completed')">Completed</button>
+            <button class="filter-chip" data-filter="cancelled" onclick="filterAppts('cancelled')">Cancelled</button>
+          </div>
+          <div id="appointments-list"><div class="loader"><div class="spinner"></div></div></div>
+        </div>
+
+        <!-- EHR Tab -->
+        <div class="tab-content" id="content-ehr">
+          <div class="card" style="margin-bottom:20px;background:var(--primary-light);border-color:rgba(26,86,219,0.15);">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <div style="font-size:24px;display:flex;align-items:center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
+              <div>
+                <h4 style="color:var(--primary);margin-bottom:2px;">Electronic Health Records (EHR)</h4>
+                <p style="color:var(--text-secondary);font-size:13px;margin:0;">Access your clinical diagnoses, treatment prescriptions, and track your daily medicine intake timeline.</p>
+              </div>
+            </div>
+          </div>
+          <div id="ehr-timeline-container"><div class="loader"><div class="spinner"></div></div></div>
+
+          <!-- Diagnostic Lab Reports & Digital Scans -->
+          <div class="card" style="margin-top:24px;">
+            <div class="card-header" style="margin-bottom: 16px;">
+              <div class="card-title" style="display:inline-flex; align-items:center; gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9c3.9-3.9 10.2-3.9 14.1 0 3.9 3.9 3.9 10.2 0 14.1-3.9 3.9-10.2 3.9-14.1 0z"/><path d="m2 2 20 20"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                Diagnostic Lab Reports & Medical Scans
+              </div>
+              <span class="badge badge-completed">Verified EHR Files</span>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <!-- Report 1 -->
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border:1px solid var(--border); border-radius:8px; background:var(--bg-elevated); flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; gap:14px; align-items:center;">
+                  <div style="width:40px; height:40px; border-radius:6px; background:rgba(26,86,219,0.08); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                  </div>
+                  <div>
+                    <div style="font-weight:700; color:var(--text-primary);">Complete Blood Count (CBC) with Differential</div>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Requested on: May 15, 2026 · Lab Ref: #L-5921A · Status: <span style="color:var(--success); font-weight:700;">NORMAL RANGE</span></div>
+                  </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="viewLabReport('cbc')" style="display:inline-flex; align-items:center; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  Inspect Results
+                </button>
+              </div>
+
+              <!-- Report 2 -->
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border:1px solid var(--border); border-radius:8px; background:var(--bg-elevated); flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; gap:14px; align-items:center;">
+                  <div style="width:40px; height:40px; border-radius:6px; background:rgba(26,86,219,0.08); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                  </div>
+                  <div>
+                    <div style="font-weight:700; color:var(--text-primary);">Thyroid Panel (TSH, Free T3, Free T4)</div>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Requested on: May 15, 2026 · Lab Ref: #L-5921B · Status: <span style="color:var(--warning); font-weight:700;">MILD ELEVATION (TSH)</span></div>
+                  </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="viewLabReport('thyroid')" style="display:inline-flex; align-items:center; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  Inspect Results
+                </button>
+              </div>
+
+              <!-- Report 3 (Digital Scan) -->
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border:1px solid var(--border); border-radius:8px; background:var(--bg-elevated); flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; gap:14px; align-items:center;">
+                  <div style="width:40px; height:40px; border-radius:6px; background:rgba(124,58,237,0.08); display:flex; align-items:center; justify-content:center; color:#7c3aed;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  </div>
+                  <div>
+                    <div style="font-weight:700; color:var(--text-primary);">High-Resolution Digital Chest X-Ray (AP View)</div>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Requested on: May 12, 2026 · Imaging Ref: #IMG-419 · Status: <span style="color:var(--success); font-weight:700;">CLEAR LUNG FIELDS</span></div>
+                  </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="viewLabReport('xray')" style="display:inline-flex; align-items:center; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  View Digital Scan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing Tab -->
+        <div class="tab-content" id="content-billing">
+          <div class="card" style="margin-bottom:20px;background:var(--primary-light);border-color:rgba(26,86,219,0.15);">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <div style="font-size:24px;display:flex;align-items:center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg></div>
+              <div>
+                <h4 style="color:var(--primary);margin-bottom:2px;">Billing Statements & Receipts</h4>
+                <p style="color:var(--text-secondary);font-size:13px;margin:0;">View itemized service invoices, pay outstanding medical balances, and print clinical thermal receipts.</p>
+              </div>
+            </div>
+          </div>
+          <div id="invoices-list-container"><div class="loader"><div class="spinner"></div></div></div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div class="tab-content" id="content-profile">
+          <div class="card" style="max-width:600px;">
+            <div class="card-header"><div class="card-title">Personal Information</div><button class="btn btn-primary btn-sm" id="save-profile-btn" onclick="saveProfile()">Save Changes</button></div>
+            <form id="profile-form">
+              <div class="form-row">
+                <div class="form-group"><label class="form-label" for="p-name">Full Name</label><input type="text" id="p-name" class="form-control" /></div>
+                <div class="form-group"><label class="form-label" for="p-phone">Phone</label><input type="tel" id="p-phone" class="form-control" /></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label" for="p-dob">Date of Birth</label><input type="date" id="p-dob" class="form-control" /></div>
+                <div class="form-group"><label class="form-label" for="p-gender">Gender</label><select id="p-gender" class="form-control"><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label" for="p-blood">Blood Group</label><select id="p-blood" class="form-control"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                <div class="form-group"><label class="form-label" for="p-address">Address</label><input type="text" id="p-address" class="form-control" /></div>
+              </div>
+              <div class="form-group"><label class="form-label" for="p-notes">Medical Notes / Known Conditions</label><textarea id="p-notes" class="form-control" rows="3" placeholder="e.g., Diabetic, allergic to penicillin..."></textarea></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Secure Billing Terminal Modal -->
+  <div class="modal-overlay" id="pay-modal">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-header">
+        <div class="modal-title">Secure Billing Terminal</div>
+        <button class="modal-close" onclick="closeModal('pay-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:var(--primary-glow); border:1px solid rgba(14,165,233,0.15); border-radius:var(--radius-sm); padding:14px 18px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; font-weight:700; letter-spacing:0.05em;">Outstanding Balance</span>
+            <h4 id="pay-amount-label" style="font-size:22px; font-weight:800; color:var(--text-primary); font-family:'Outfit',sans-serif; margin-top:2px;">₹0</h4>
+          </div>
+          <span class="badge badge-pending">Unpaid Statement</span>
+        </div>
+        
+        <!-- Simulated Credit Card Visual -->
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); padding: 22px; border-radius: var(--radius-lg); position: relative; color: white; display: flex; flex-direction: column; justify-content: space-between; min-height: 180px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); overflow:hidden; user-select:none;">
+          <div style="position:absolute; right:-20px; bottom:-25px; opacity:0.04; font-size:150px; pointer-events:none; line-height:1;">💳</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:800; font-family:'Outfit',sans-serif; letter-spacing:1.5px; font-size:12px; opacity:0.8;">MEDICARE PAY</div>
+            <div style="width:36px; height:24px; background:rgba(255,255,255,0.15); border-radius:4px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:10px; border:1px solid rgba(255,255,255,0.2);">VISA</div>
+          </div>
+          <div style="width: 40px; height: 30px; background: linear-gradient(135deg, #fbbf24, #d97706); border-radius: 6px; margin: 12px 0 6px;"></div>
+          <div style="font-size: 19px; font-family: 'Courier New', monospace; letter-spacing: 2px; font-weight:700;" id="visual-card-number">•••• •••• •••• ••••</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-family:'Courier New', monospace; font-size:11px;">
+            <div>
+              <div style="font-size:8px; opacity:0.5; text-transform:uppercase;">Card Holder</div>
+              <div id="visual-card-name" style="font-weight:bold; text-transform:uppercase; letter-spacing:1px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">PATIENT NAME</div>
+            </div>
+            <div>
+              <div style="font-size:8px; opacity:0.5; text-transform:uppercase;">Expires</div>
+              <div id="visual-card-exp" style="font-weight:bold;">12/29</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Input Fields -->
+        <form id="payment-card-form" onsubmit="event.preventDefault(); processTerminalPayment();">
+          <input type="hidden" id="pay-invoice-id" />
+          <div class="form-group">
+            <label class="form-label" for="card-holder-name">Cardholder Name</label>
+            <input type="text" id="card-holder-name" class="form-control" placeholder="John Doe" required oninput="document.getElementById('visual-card-name').textContent = this.value.toUpperCase() || 'PATIENT NAME'" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="card-number-input">Card Number</label>
+            <input type="text" id="card-number-input" class="form-control" placeholder="4111 2222 3333 4444" pattern="\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4}" maxlength="19" required oninput="formatCardNum(this)" />
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label" for="card-expiry">Expiry Date</label><input type="text" id="card-expiry" class="form-control" placeholder="MM/YY" maxlength="5" required oninput="formatExpiry(this)" /></div>
+            <div class="form-group"><label class="form-label" for="card-cvv">CVV</label><input type="password" id="card-cvv" class="form-control" placeholder="•••" maxlength="3" pattern="\\d{3}" required /></div>
+          </div>
+          
+          <div id="payment-status-message" style="display:none; text-align:center; padding:12px; margin-bottom:12px; font-weight:600; font-size:12px; border-radius:var(--radius-sm);"></div>
+          
+          <button type="submit" class="btn btn-primary w-full btn-lg" id="submit-card-pay-btn" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+            Authorize Payment
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Printable Clinical Thermal Receipt Modal -->
+  <div class="modal-overlay" id="receipt-modal">
+    <div class="modal" style="max-width:460px;">
+      <div class="modal-header">
+        <div class="modal-title">Clinical Statement Receipt</div>
+        <button class="modal-close" onclick="closeModal('receipt-modal')">✕</button>
+      </div>
+      <div class="modal-body" style="background:var(--bg-elevated); padding:20px; border-radius:var(--radius-sm); overflow-y:auto; max-height:480px;">
+        <div id="receipt-print-content">
+          <div class="receipt-print-wrapper" id="receipt-print-area">
+            <div class="receipt-header">
+              <div class="receipt-logo">🏥 MEDICARE</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-top:2px;">Clinical Excellence Center</div>
+              <div style="font-size:9px;color:#94a3b8;margin-top:1px;">DLF Phase 3, Gurgaon, HR, India</div>
+            </div>
+            
+            <div class="receipt-divider"></div>
+            
+            <div class="receipt-row"><span>Receipt ID:</span><strong id="rec-id">REC-0000</strong></div>
+            <div class="receipt-row"><span>Date:</span><strong id="rec-date">2026-05-20</strong></div>
+            <div class="receipt-row"><span>Patient:</span><strong id="rec-patient">Patient Name</strong></div>
+            <div class="receipt-row"><span>Doctor:</span><strong id="rec-doctor">Dr. Doctor Name</strong></div>
+            <div class="receipt-row"><span>Clinical Speciality:</span><strong id="rec-spec">Specialization</strong></div>
+            
+            <div class="receipt-divider"></div>
+            
+            <div class="receipt-row" style="font-weight:700; font-family:'Courier New', monospace;"><span>CLINICAL DIAGNOSIS:</span></div>
+            <div id="rec-diagnosis" style="margin-top:2px; font-style:italic; font-size:12px; font-family:'Courier New', monospace;">Diagnosis description...</div>
+            
+            <div class="receipt-divider"></div>
+            
+            <table class="receipt-table" style="font-family:'Courier New', monospace;">
+              <thead>
+                <tr><th style="font-family:'Courier New', monospace;">SERVICE ITEM</th><th style="text-align:right; font-family:'Courier New', monospace;">AMOUNT</th></tr>
+              </thead>
+              <tbody id="rec-items-body">
+                <!-- Dynamic -->
+              </tbody>
+            </table>
+            
+            <div class="receipt-divider"></div>
+            
+            <div class="receipt-row"><span>Subtotal:</span><strong id="rec-subtotal">₹0.00</strong></div>
+            <div class="receipt-row"><span>Tax (5% GST):</span><strong id="rec-tax">₹0.00</strong></div>
+            <div class="receipt-row" style="font-size:15px; font-weight:800; border-top:1px dashed #64748b; padding-top:6px; margin-top:6px; font-family:'Courier New', monospace;"><span>TOTAL PAID:</span><strong id="rec-total">₹0.00</strong></div>
+            
+            <div class="receipt-divider"></div>
+            
+            <div class="receipt-row"><span>Payment Status:</span><strong style="color:#059669;" id="rec-status">PAID</strong></div>
+            <div class="receipt-row"><span>Payment Method:</span><strong id="rec-method">Credit Card</strong></div>
+            
+            <div class="receipt-footer">
+               <strong>Thank you for choosing MediCare</strong>
+               <p style="margin-top:4px;">Providing premium inpatient & outpatient healthcare services.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('receipt-modal')">Close</button>
+        <button class="btn btn-primary" onclick="printThermalReceipt()" style="display:inline-flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Print Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Diagnostic Lab Report Modal -->
+  <div class="modal-overlay" id="lab-modal">
+    <div class="modal" style="max-width:540px;">
+      <div class="modal-header">
+        <div class="modal-title" id="lab-modal-title">Diagnostic Lab Report</div>
+        <button class="modal-close" onclick="closeModal('lab-modal')">✕</button>
+      </div>
+      <div class="modal-body" style="overflow-y:auto; max-height:480px; padding:24px 28px;">
+        <div id="lab-modal-content">
+          <!-- Dynamic -->
+        </div>
+      </div>
+      <div class="modal-footer" style="padding:0 28px 28px;">
+        <button class="btn btn-secondary" onclick="closeModal('lab-modal')">Close</button>
+        <button class="btn btn-primary" onclick="printLabReport()" style="display:inline-flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Print Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    let allAppointments = [];
+    let allInvoices = [];
+    let activeFilter = 'all';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      requirePatientLogin();
+      initSidebarToggle();
+
+      const user = getUser();
+      document.getElementById('sidebar-name').textContent = user.name;
+      document.getElementById('sidebar-avatar').textContent = user.name.charAt(0).toUpperCase();
+
+      await loadAppointments();
+      await loadProfile();
+      await loadEHR();
+      await loadInvoices();
+      loadAppointmentSummary();
+    });
+
+    async function loadAppointments() {
+      const res = await api.get('/patients/my-appointments', true);
+      if (!res || !res.success) {
+        document.getElementById('appointments-list').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger); opacity:0.8; margin:0 auto 16px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div><h3>Failed to load appointments</h3></div>';
+        return;
+      }
+      allAppointments = res.data;
+
+      const pending = allAppointments.filter(a => a.status === 'pending').length;
+      const completed = allAppointments.filter(a => a.status === 'completed').length;
+      const cancelled = allAppointments.filter(a => a.status === 'cancelled').length;
+
+      document.getElementById('stat-total').textContent = allAppointments.length;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-completed').textContent = completed;
+      document.getElementById('stat-cancelled').textContent = cancelled;
+
+      renderAppointments(allAppointments);
+    }
+
+    function filterAppts(filter) {
+      activeFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === filter));
+      const filtered = filter === 'all' ? allAppointments : allAppointments.filter(a => a.status === filter);
+      renderAppointments(filtered);
+    }
+
+    function renderAppointments(appts) {
+      const list = document.getElementById('appointments-list');
+      if (appts.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); opacity:0.6; margin:0 auto 16px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div><h3>No appointments found</h3><p>Book your first appointment with one of our doctors.</p><a href="/pages/doctors.html" class="btn btn-primary" style="margin-top:16px;">Find Doctors →</a></div>`;
+        return;
+      }
+
+      list.innerHTML = appts.map(a => `
+        <div class="appt-card animate-fade-in">
+          <div class="appt-top">
+            <div>
+              <div class="appt-doctor">Dr. ${a.doctor_name}</div>
+              <div class="appt-spec">${a.specialization}</div>
+              ${a.reason ? `<div class="appt-reason">Reason: ${a.reason}</div>` : ''}
+            </div>
+            <span class="badge badge-${a.status}">${a.status.charAt(0).toUpperCase() + a.status.slice(1)}</span>
+          </div>
+          <div class="appt-meta">
+            <div class="appt-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>${formatDate(a.appointment_date)}</span>
+            </div>
+            <div class="appt-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span>${formatTime(a.appointment_time)}</span>
+            </div>
+            <div class="appt-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              <span>₹${parseFloat(a.fee).toFixed(0)}</span>
+            </div>
+          </div>
+          ${a.notes ? `<div style="margin-top:10px;padding:10px;background:var(--bg-elevated);border-radius:var(--radius-sm);font-size:13px;color:var(--text-secondary);"><strong>Doctor's Clinical Notes:</strong> ${a.notes}</div>` : ''}
+          <div class="appt-footer">
+            <span class="appt-id">Booking ID: #${a.id} · Booked on ${formatDate(a.created_at)}</span>
+            ${(a.status === 'pending' || a.status === 'confirmed') ? `<button class="btn btn-danger btn-sm" onclick="cancelAppt(${a.id})">Cancel</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function cancelAppt(id) {
+      if (!confirm('Are you sure you want to cancel this appointment?')) return;
+      const res = await api.put(`/appointments/${id}/cancel`, {}, true);
+      if (res && res.success) {
+        showToast('info', 'Appointment Cancelled', 'Your appointment has been cancelled.');
+        await loadAppointments();
+        filterAppts(activeFilter);
+      } else {
+        showToast('error', 'Error', res?.message || 'Could not cancel appointment.');
+      }
+    }
+
+    async function loadProfile() {
+      const res = await api.get('/patients/me', true);
+      if (!res || !res.success) return;
+      const p = res.data;
+      document.getElementById('p-name').value = p.name || '';
+      document.getElementById('p-phone').value = p.phone || '';
+      document.getElementById('p-dob').value = p.dob ? p.dob.split('T')[0] : '';
+      document.getElementById('p-gender').value = p.gender || '';
+      document.getElementById('p-blood').value = p.blood_group || '';
+      document.getElementById('p-address').value = p.address || '';
+      document.getElementById('p-notes').value = p.medical_notes || '';
+
+      // Live Bed allocation banner
+      const bedContainer = document.getElementById('active-bed-banner');
+      if (bedContainer) {
+        if (p.active_bed) {
+          const b = p.active_bed;
+          const admissionDate = new Date(b.admission_date);
+          const today = new Date();
+          const diffTime = Math.abs(today - admissionDate);
+          const daysAdmitted = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+          const totalEstimated = parseFloat(b.fee_per_day) * daysAdmitted;
+
+          bedContainer.innerHTML = `
+            <div class="card active-bed-card" style="background: linear-gradient(135deg, #1a56db, #0f172a); color: white; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); border-radius: var(--radius-lg); position: relative; overflow: hidden; padding: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; animation: animate-fade-in 0.5s ease-out; margin-bottom: 24px;">
+              <div style="position: absolute; top: -20px; right: -20px; opacity: 0.08; color: white;"><svg width="200" height="200" fill="currentColor" viewBox="0 0 24 24"><path d="M2 20h20M5 17V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12M9 8h6M9 12h6"/></svg></div>
+              <div style="display:flex; align-items:center; gap:16px;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; position: relative;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: #34d399; position: absolute; top: -1px; right: -1px; box-shadow: 0 0 0 4px rgba(52,211,153,0.3); animation: pulse 2s infinite;"></span>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 17V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12M9 8h6M9 12h6"/></svg>
+                </div>
+                <div>
+                  <div style="text-transform: uppercase; font-size: 10px; font-weight: 700; color: #93c5fd; letter-spacing: 0.1em;">
+                    Active Hospital Stay
+                  </div>
+                  <h3 style="margin: 4px 0 2px; font-size: 19px; font-family: 'Outfit', sans-serif; font-weight: 800; color: white;">Bed ${b.bed_number} — ${b.ward_type}</h3>
+                  <p style="margin: 0; font-size: 13px; color: #cbd5e1;">Admitted on ${formatDate(b.admission_date)} (${daysAdmitted} ${daysAdmitted === 1 ? 'day' : 'days'} so far)</p>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; text-align: right;">
+                <span style="font-size: 10px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.05em;">Ward Rate</span>
+                <span style="font-size: 20px; font-weight: 800; color: #34d399; font-family: 'Outfit', sans-serif;">₹${parseFloat(b.fee_per_day).toFixed(0)}/day</span>
+                <span style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Est. charges: ₹${totalEstimated.toFixed(0)}</span>
+              </div>
+            </div>
+          `;
+        } else {
+          bedContainer.innerHTML = '';
+        }
+      }
+    }
+
+    async function saveProfile() {
+      const btn = document.getElementById('save-profile-btn');
+      btn.classList.add('btn-loading'); btn.disabled = true;
+
+      const body = {
+        name: document.getElementById('p-name').value.trim(),
+        phone: document.getElementById('p-phone').value.trim(),
+        dob: document.getElementById('p-dob').value,
+        gender: document.getElementById('p-gender').value,
+        blood_group: document.getElementById('p-blood').value,
+        address: document.getElementById('p-address').value.trim(),
+        medical_notes: document.getElementById('p-notes').value.trim()
+      };
+
+      const res = await api.put('/patients/me', body, true);
+      btn.classList.remove('btn-loading'); btn.disabled = false;
+
+      if (res && res.success) {
+        showToast('success', 'Profile Updated', 'Your information has been saved.');
+        const user = getUser();
+        user.name = body.name;
+        localStorage.setItem('user', JSON.stringify(user));
+        document.getElementById('sidebar-name').textContent = body.name;
+        document.getElementById('sidebar-avatar').textContent = body.name.charAt(0).toUpperCase();
+      }
+      else showToast('error', 'Error', res?.message || 'Could not update profile.');
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+
+      document.getElementById(`content-${tab}`).classList.add('active');
+      document.getElementById(`tab-${tab}`)?.classList.add('active');
+      document.getElementById(`link-${tab}`)?.classList.add('active');
+
+      const titles = { 
+        appointments: 'My Appointments', 
+        profile: 'My Profile',
+        ehr: 'Clinical History (EHR)',
+        billing: 'Billing & Receipts'
+      };
+      document.getElementById('topbar-title').textContent = titles[tab] || 'Dashboard';
+    }
+
+    async function loadEHR() {
+      const container = document.getElementById('ehr-timeline-container');
+      const completedAppts = allAppointments.filter(a => a.status === 'completed');
+
+      if (completedAppts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); opacity:0.6; margin:0 auto 16px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            </div>
+            <h3>No Clinical Records</h3>
+            <p>Your electronic health history & daily treatment timelines will appear here once an appointment is completed.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = `<div class="ehr-timeline">${
+        completedAppts.map(a => {
+          const rxLines = a.prescription ? a.prescription.split('\\n').map(line => line.trim()).filter(line => line.length > 0) : [];
+          
+          let checklistHtml = '';
+          if (rxLines.length > 0) {
+            checklistHtml = `
+              <div class="dosage-progress-container">
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700;">
+                  <span style="color:var(--text-secondary); letter-spacing:0.05em;">DAILY DOSAGE INTAKE CHECKLIST</span>
+                  <span style="color:var(--success);" id="rx-pct-${a.id}">0% COMPLETED</span>
+                </div>
+                <div class="dosage-progress-bar-container">
+                  <div class="dosage-progress-bar-fill" id="rx-progress-${a.id}"></div>
+                </div>
+              </div>
+              <div class="med-checklist">
+                ${rxLines.map((line, idx) => {
+                  const storageKey = `med-dose-completed-${a.id}-${idx}`;
+                  const isChecked = localStorage.getItem(storageKey) === 'true';
+                  
+                  let medName = line;
+                  let medSched = 'As directed by doctor';
+                  if (line.includes(' - ')) {
+                    const parts = line.split(' - ');
+                    medName = parts[0].trim();
+                    medSched = parts[1].trim();
+                  }
+
+                  return `
+                    <div class="med-check-item ${isChecked ? 'checked' : ''}" onclick="toggleMedDose(this, ${a.id}, ${idx})" id="rx-item-${a.id}-${idx}">
+                      <div class="med-check-label">
+                        <span class="med-check-name">${medName}</span>
+                        <span class="med-check-sched">${medSched}</span>
+                      </div>
+                      <div class="check-circle">
+                        <svg width="10" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          } else {
+            checklistHtml = `<div style="font-size:13px; color:var(--text-muted); font-style:italic;">No daily medicines prescribed.</div>`;
+          }
+
+          return `
+            <div class="timeline-card animate-fade-in">
+              <div class="timeline-title-row">
+                <div>
+                  <div style="font-size:15px; font-weight:700; color:var(--text-primary); font-family:'Outfit',sans-serif;">Clinical consultation record with Dr. ${a.doctor_name}</div>
+                  <div style="font-size:11px; color:var(--primary); font-weight:600; margin-top:2px; letter-spacing:0.05em;">${a.specialization.toUpperCase()} SPECIALITY · ID #CL-${a.id}</div>
+                </div>
+                <span class="badge badge-completed">${formatDate(a.appointment_date)}</span>
+              </div>
+              <div class="timeline-body-row">
+                <div class="timeline-diag-section">
+                  <h4 style="font-size:12px; color:var(--text-secondary); margin-bottom:8px; font-weight:700; letter-spacing:0.05em;">CLINICAL DIAGNOSIS & FINDINGS</h4>
+                  <div style="background:var(--bg-elevated); border:1px solid var(--border); padding:16px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; color:var(--text-primary);">
+                    ${a.diagnosis || 'Diagnosis pending'}
+                  </div>
+                  ${a.notes ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:12px; line-height:1.4;"><strong>Consultation Notes:</strong> ${a.notes}</div>` : ''}
+                </div>
+                <div class="timeline-rx-section">
+                  <h4 style="font-size:12px; color:var(--primary); margin-bottom:12px; font-weight:700; display:flex; align-items:center; gap:6px; letter-spacing:0.05em;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    TREATMENT & PRESCRIPTION SCHEDULE
+                  </h4>
+                  ${checklistHtml}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')
+      }`;
+
+      completedAppts.forEach(a => updateRxProgress(a.id));
+    }
+
+    function toggleMedDose(element, appointmentId, idx) {
+      const storageKey = `med-dose-completed-${appointmentId}-${idx}`;
+      const isChecked = element.classList.contains('checked');
+      
+      if (isChecked) {
+        element.classList.remove('checked');
+        localStorage.setItem(storageKey, 'false');
+      } else {
+        element.classList.add('checked');
+        localStorage.setItem(storageKey, 'true');
+      }
+
+      updateRxProgress(appointmentId);
+    }
+
+    function updateRxProgress(appointmentId) {
+      const items = document.querySelectorAll(`[id^="rx-item-${appointmentId}-"]`);
+      if (items.length === 0) return;
+
+      const checkedCount = Array.from(items).filter(item => item.classList.contains('checked')).length;
+      const totalCount = items.length;
+      const percentage = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
+
+      const fill = document.getElementById(`rx-progress-${appointmentId}`);
+      const text = document.getElementById(`rx-pct-${appointmentId}`);
+
+      if (fill) fill.style.width = `${percentage}%`;
+      if (text) text.textContent = `${percentage}% COMPLETED`;
+    }
+
+    async function loadInvoices() {
+      const container = document.getElementById('invoices-list-container');
+      const res = await api.get('/invoices/my-invoices', true);
+      if (!res || !res.success) {
+        container.innerHTML = '<div class="empty-state"><h3>Failed to load invoice statements</h3></div>';
+        return;
+      }
+
+      allInvoices = res.data;
+      if (allInvoices.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); opacity:0.6; margin:0 auto 16px;"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+            </div>
+            <h3>No Billing Statements Available</h3>
+            <p>Once you complete a consultation, outpatient or inpatient billing records will appear here.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="invoice-grid">
+          ${allInvoices.map(i => {
+            const isPaid = i.payment_status === 'paid';
+            return `
+              <div class="invoice-card animate-fade-in">
+                <div>
+                  <div class="invoice-card-header">
+                    <div>
+                      <div class="invoice-card-id">Invoice #INV-${i.id}</div>
+                      <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">FOR APPOINTMENT #${i.appointment_id}</div>
+                    </div>
+                    <span class="badge badge-${i.payment_status}">${i.payment_status.toUpperCase()}</span>
+                  </div>
+                  <div class="invoice-card-amount">₹${parseFloat(i.total_amount).toFixed(0)}</div>
+                  <div style="font-size:12px;color:var(--text-secondary);line-height:1.4;margin-top:8px;">
+                    <div>Doctor: <strong>Dr. ${i.doctor_name}</strong></div>
+                    <div style="margin-top:1px;">Date: <span>${formatDate(i.appointment_date)}</span></div>
+                  </div>
+                </div>
+                <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border-light);display:flex;justify-content:flex-end;">
+                  ${isPaid ? `
+                    <button class="btn btn-secondary btn-sm" onclick="openReceiptModal(${i.id})" style="display:inline-flex;align-items:center;gap:6px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                      Print Receipt
+                    </button>
+                  ` : `
+                    <button class="btn btn-primary btn-sm" onclick="openPayModal(${i.id}, ${i.total_amount})" style="display:inline-flex;align-items:center;gap:6px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+                      Pay Online
+                    </button>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function openPayModal(invoiceId, totalAmount) {
+      document.getElementById('pay-invoice-id').value = invoiceId;
+      document.getElementById('pay-amount-label').textContent = `₹${parseFloat(totalAmount).toFixed(0)}`;
+      document.getElementById('payment-card-form').reset();
+      
+      const user = getUser();
+      document.getElementById('visual-card-name').textContent = user?.name?.toUpperCase() || 'PATIENT NAME';
+      document.getElementById('visual-card-number').textContent = '•••• •••• •••• ••••';
+      document.getElementById('visual-card-exp').textContent = '12/29';
+      
+      const msg = document.getElementById('payment-status-message');
+      msg.style.display = 'none';
+      
+      openModal('pay-modal');
+    }
+
+    function formatCardNum(input) {
+      let v = input.value.replace(/\\s+/g, '').replace(/[^0-9]/gi, '');
+      let matches = v.match(/\\d{4,16}/g);
+      let match = matches && matches[0] || '';
+      let parts = [];
+      for (let i=0, len=match.length; i<len; i+=4) {
+        parts.push(match.substring(i, i+4));
+      }
+      if (parts.length > 0) {
+        input.value = parts.join(' ');
+      } else {
+        input.value = v;
+      }
+      document.getElementById('visual-card-number').textContent = input.value || '•••• •••• •••• ••••';
+    }
+
+    function formatExpiry(input) {
+      let v = input.value.replace(/[^0-9]/gi, '');
+      if (v.length >= 2) {
+        input.value = v.substring(0,2) + '/' + v.substring(2,4);
+      } else {
+        input.value = v;
+      }
+      document.getElementById('visual-card-exp').textContent = input.value || '12/29';
+    }
+
+    async function processTerminalPayment() {
+      const invoiceId = document.getElementById('pay-invoice-id').value;
+      const btn = document.getElementById('submit-card-pay-btn');
+      const msg = document.getElementById('payment-status-message');
+
+      btn.classList.add('btn-loading');
+      btn.disabled = true;
+
+      msg.style.display = 'block';
+      msg.style.background = 'rgba(245,158,11,0.1)';
+      msg.style.color = 'var(--warning)';
+      msg.textContent = '⏳ Processing transaction... Connecting with payment gateway...';
+
+      setTimeout(async () => {
+        msg.style.background = 'rgba(16,185,129,0.1)';
+        msg.style.color = 'var(--success)';
+        msg.textContent = '✨ Payment verified! Securing records...';
+
+        const res = await api.post(`/invoices/${invoiceId}/pay`, { method: 'Credit Card' }, true);
+        
+        setTimeout(async () => {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+          closeModal('pay-modal');
+          
+          if (res && res.success) {
+            showToast('success', 'Billing Paid', 'Your invoice statement has been settled.');
+            await loadAppointments();
+            await loadEHR();
+            await loadInvoices();
+          } else {
+            showToast('error', 'Payment Rejected', res?.message || 'Transaction could not be completed.');
+          }
+        }, 1200);
+      }, 1800);
+    }
+
+    async function openReceiptModal(invoiceId) {
+      const res = await api.get(`/invoices/${invoiceId}`, true);
+      if (!res || !res.success) {
+        showToast('error', 'Error', 'Could not fetch statement details.');
+        return;
+      }
+
+      const inv = res.data;
+      document.getElementById('rec-id').textContent = `REC-${String(inv.id).padStart(4,'0')}`;
+      document.getElementById('rec-date').textContent = formatDate(inv.created_at);
+      document.getElementById('rec-patient').textContent = inv.patient_name;
+      document.getElementById('rec-doctor').textContent = `Dr. ${inv.doctor_name}`;
+      document.getElementById('rec-spec').textContent = inv.specialization;
+      document.getElementById('rec-diagnosis').textContent = inv.diagnosis || 'Routine Clinical Consultation';
+
+      let itemsHtml = `
+        <tr><td style="font-family:'Courier New', monospace; padding: 6px 0;">OPD Consultation Fee</td><td style="text-align:right; font-family:'Courier New', monospace; padding: 6px 0;">₹${parseFloat(inv.consultation_fee).toFixed(2)}</td></tr>
+      `;
+
+      if (parseFloat(inv.medicine_charges) > 0) {
+        itemsHtml += `
+          <tr><td style="font-family:'Courier New', monospace; padding: 6px 0;">Prescription Medicines</td><td style="text-align:right; font-family:'Courier New', monospace; padding: 6px 0;">₹${parseFloat(inv.medicine_charges).toFixed(2)}</td></tr>
+        `;
+      }
+
+      if (parseFloat(inv.room_charges) > 0) {
+        itemsHtml += `
+          <tr><td style="font-family:'Courier New', monospace; padding: 6px 0;">Inpatient Room & Board</td><td style="text-align:right; font-family:'Courier New', monospace; padding: 6px 0;">₹${parseFloat(inv.room_charges).toFixed(2)}</td></tr>
+        `;
+      }
+
+      document.getElementById('rec-items-body').innerHTML = itemsHtml;
+      
+      const subtotal = parseFloat(inv.consultation_fee) + parseFloat(inv.medicine_charges) + parseFloat(inv.room_charges);
+      document.getElementById('rec-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+      document.getElementById('rec-tax').textContent = `₹${parseFloat(inv.tax).toFixed(2)}`;
+      document.getElementById('rec-total').textContent = `₹${parseFloat(inv.total_amount).toFixed(2)}`;
+      document.getElementById('rec-status').textContent = inv.payment_status.toUpperCase();
+      document.getElementById('rec-method').textContent = inv.payment_method || 'Credit Card';
+
+      openModal('receipt-modal');
+    }
+
+    function printThermalReceipt() {
+      window.print();
+    }
+
+    // ============================================================
+    // APPOINTMENT SUMMARY WIDGET — reads real data
+    // ============================================================
+    function loadAppointmentSummary() {
+      // Data is already loaded in allAppointments from loadAppointments()
+      // Use a small delay to ensure allAppointments is ready
+      setTimeout(() => {
+        const total = allAppointments.length;
+        const pending = allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
+        const completed = allAppointments.filter(a => a.status === 'completed').length;
+        const cancelled = allAppointments.filter(a => a.status === 'cancelled').length;
+
+        const totalEl = document.getElementById('summary-total');
+        const pendingEl = document.getElementById('summary-pending');
+        const completedEl = document.getElementById('summary-completed');
+        const cancelledEl = document.getElementById('summary-cancelled');
+        const updatedEl = document.getElementById('summary-last-updated');
+
+        if (totalEl) totalEl.textContent = total;
+        if (pendingEl) pendingEl.textContent = pending;
+        if (completedEl) completedEl.textContent = completed;
+        if (cancelledEl) cancelledEl.textContent = cancelled;
+        if (updatedEl) {
+          const now = new Date();
+          updatedEl.textContent = 'Updated ' + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        }
+      }, 400);
+    }
+
+
+    // ============================================================
+    // INTERACTIVE LAB REPORT & DigitalPACS Radiography Viewer
+    // ============================================================
+    function viewLabReport(type) {
+      const content = document.getElementById('lab-modal-content');
+      const title = document.getElementById('lab-modal-title');
+      const user = getUser();
+      const patientName = user?.name?.toUpperCase() || 'PATIENT NAME';
+
+      if (type === 'cbc') {
+        title.textContent = 'Complete Blood Count (CBC) Report';
+        content.innerHTML = `
+          <div style="background:#ffffff; color:#0f172a; padding:20px; border:1px solid #e2e8f0; border-radius:6px; font-family:'Courier New', monospace; font-size:12px; line-height:1.4;">
+            <div style="text-align:center; margin-bottom:16px;">
+              <strong style="font-size:15px; font-family:'Outfit',sans-serif; color:var(--primary);">🏥 MEDICARE LAB SERVICES</strong>
+              <div style="font-size:10px; color:#64748b;">CLINICAL HEMATOLOGY DEPARTMENT</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+              <div>
+                Patient: <strong>\${patientName}</strong><br>
+                Age/Gender: <strong>32 Yr / Male</strong>
+              </div>
+              <div style="text-align:right;">
+                Ref No: <strong>#L-5921A</strong><br>
+                Date: <strong>2026-05-15</strong>
+              </div>
+            </div>
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+              <thead>
+                <tr style="border-bottom:1px solid #000; font-weight:bold;">
+                  <th style="padding:4px 0;">TEST PARAMETER</th>
+                  <th style="padding:4px 0; text-align:right;">RESULT</th>
+                  <th style="padding:4px 0; text-align:right;">REF. INTERVAL</th>
+                  <th style="padding:4px 0; text-align:right;">UNIT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding:4px 0;">Hemoglobin</td><td style="text-align:right;font-weight:700;">14.8</td><td style="text-align:right;color:#64748b;">13.0 - 17.0</td><td style="text-align:right;">g/dL</td></tr>
+                <tr><td style="padding:4px 0;">Red Blood Cells (RBC)</td><td style="text-align:right;font-weight:700;">5.1</td><td style="text-align:right;color:#64748b;">4.5 - 5.5</td><td style="text-align:right;">M/uL</td></tr>
+                <tr><td style="padding:4px 0;">White Blood Cells (WBC)</td><td style="text-align:right;font-weight:700;">6,800</td><td style="text-align:right;color:#64748b;">4,000-11,000</td><td style="text-align:right;">/uL</td></tr>
+                <tr><td style="padding:4px 0;">Platelets Count</td><td style="text-align:right;font-weight:700;">280,000</td><td style="text-align:right;color:#64748b;">150k - 450k</td><td style="text-align:right;">/uL</td></tr>
+                <tr><td style="padding:4px 0;">Hematocrit (HCT)</td><td style="text-align:right;font-weight:700;">44.2</td><td style="text-align:right;color:#64748b;">40.0 - 50.0</td><td style="text-align:right;">%</td></tr>
+              </tbody>
+            </table>
+            <div style="margin-top:16px; padding:8px; background:rgba(16,185,129,0.06); border-radius:4px; color:#059669; font-weight:bold; text-align:center;">
+              ✅ SUMMARY: HEMATOLOGY PROFILE IS COMPLETELY NORMAL
+            </div>
+          </div>
+        `;
+      } else if (type === 'thyroid') {
+        title.textContent = 'Thyroid Function Panel Report';
+        content.innerHTML = `
+          <div style="background:#ffffff; color:#0f172a; padding:20px; border:1px solid #e2e8f0; border-radius:6px; font-family:'Courier New', monospace; font-size:12px; line-height:1.4;">
+            <div style="text-align:center; margin-bottom:16px;">
+              <strong style="font-size:15px; font-family:'Outfit',sans-serif; color:var(--primary);">🏥 MEDICARE LAB SERVICES</strong>
+              <div style="font-size:10px; color:#64748b;">CLINICAL ENDOCRINOLOGY DEPARTMENT</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+              <div>
+                Patient: <strong>\${patientName}</strong><br>
+                Age/Gender: <strong>32 Yr / Male</strong>
+              </div>
+              <div style="text-align:right;">
+                Ref No: <strong>#L-5921B</strong><br>
+                Date: <strong>2026-05-15</strong>
+              </div>
+            </div>
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+              <thead>
+                <tr style="border-bottom:1px solid #000; font-weight:bold;">
+                  <th style="padding:4px 0;">TEST PARAMETER</th>
+                  <th style="padding:4px 0; text-align:right;">RESULT</th>
+                  <th style="padding:4px 0; text-align:right;">REF. INTERVAL</th>
+                  <th style="padding:4px 0; text-align:right;">UNIT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="background:rgba(245,158,11,0.05);"><td style="padding:4px 0;">Thyroid Stimulating Hormone (TSH)</td><td style="text-align:right;font-weight:700;color:var(--warning);">5.20 *</td><td style="text-align:right;color:#64748b;">0.40 - 4.50</td><td style="text-align:right;">uIU/mL</td></tr>
+                <tr><td style="padding:4px 0;">Free Triiodothyronine (FT3)</td><td style="text-align:right;font-weight:700;">3.1</td><td style="text-align:right;color:#64748b;">2.0 - 4.4</td><td style="text-align:right;">pg/mL</td></tr>
+                <tr><td style="padding:4px 0;">Free Thyroxine (FT4)</td><td style="text-align:right;font-weight:700;">1.2</td><td style="text-align:right;color:#64748b;">0.8 - 1.8</td><td style="text-align:right;">ng/dL</td></tr>
+              </tbody>
+            </table>
+            <div style="margin-top:16px; padding:8px; background:rgba(245,158,11,0.06); border-radius:4px; color:#b45309; font-weight:bold; line-height:1.4;">
+              ⚠️ WARNING: TSH is mildly elevated, suggesting potential subclinical hypothyroidism. Correlate clinically with your primary consulting doctor.
+            </div>
+          </div>
+        `;
+      } else if (type === 'xray') {
+        title.textContent = 'Digital Chest X-Ray (AP View) Report';
+        content.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="background:#ffffff; color:#0f172a; padding:20px; border:1px solid #e2e8f0; border-radius:6px; font-family:'Courier New', monospace; font-size:12px; line-height:1.4;">
+              <div style="text-align:center; margin-bottom:16px;">
+                <strong style="font-size:15px; font-family:'Outfit',sans-serif; color:var(--primary);">🏥 MEDICARE IMAGING SERVICES</strong>
+                <div style="font-size:10px; color:#64748b;">CLINICAL RADIOLOGY & IMAGING</div>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+                <div>
+                  Patient: <strong>\${patientName}</strong><br>
+                  Age/Gender: <strong>32 Yr / Male</strong>
+                </div>
+                <div style="text-align:right;">
+                  Ref No: <strong>#IMG-419</strong><br>
+                  Date: <strong>2026-05-12</strong>
+                </div>
+              </div>
+
+              <!-- Radiography Image Container -->
+              <div style="background:#090d16; border:2px solid #1e293b; border-radius:8px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; box-shadow:inset 0 4px 20px rgba(0,0,0,0.8); user-select:none; margin: 12px 0;">
+                <div style="position: absolute; top: 12px; left: 16px; font-family: monospace; font-size: 9px; color: #64748b; text-align:left; line-height:1.3;">
+                  STUDY: CHEST AP VIEW
+                </div>
+                <div style="position: absolute; top: 12px; right: 16px; font-family: monospace; font-size: 11px; color: #ef4444; font-weight: 700;">
+                  R
+                </div>
+                
+                <!-- Chest Radiography SVG -->
+                <svg id="pacs-svg" width="200" height="200" viewBox="0 0 100 100" style="color: #94a3b8; filter: drop-shadow(0 0 6px rgba(148, 163, 184, 0.3)); margin: 20px 0 10px;">
+                  <line x1="50" y1="10" x2="50" y2="90" stroke="currentColor" stroke-dasharray="2,2" stroke-width="1.5" opacity="0.4"/>
+                  <rect x="48" y="15" width="4" height="60" rx="1" fill="currentColor" opacity="0.2"/>
+                  
+                  <path d="M46 25 Q30 23 24 30 Q30 38 46 38" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M46 33 Q25 32 18 40 Q25 48 46 48" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M46 42 Q20 40 14 50 Q20 58 46 58" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M46 51 Q18 50 12 62 Q18 70 46 70" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M46 60 Q20 62 14 74" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+                  
+                  <path d="M54 25 Q70 23 76 30 Q70 38 54 38" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M54 33 Q75 32 82 40 Q75 48 54 48" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M54 42 Q80 40 86 50 Q80 58 54 58" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M54 51 Q82 50 88 62 Q82 70 54 70" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                  <path d="M54 60 Q80 62 86 74" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+                  
+                  <path d="M50 18 Q35 15 20 22" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.8"/>
+                  <path d="M50 18 Q65 15 80 22" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.8"/>
+                  
+                  <path d="M22 26 C22 26 14 45 14 58 C14 70 26 76 42 74 C36 60 36 38 36 26 Z" fill="currentColor" opacity="0.06"/>
+                  <path d="M78 26 C78 26 86 45 86 58 C86 70 74 76 58 74 C64 60 64 38 64 26 Z" fill="currentColor" opacity="0.06"/>
+                </svg>
+                
+                <div style="font-size: 10px; font-family: monospace; color: #64748b; display: flex; align-items: center; gap: 6px;">
+                  HIGH-RESOLUTION DIGITAL RADIOGRAPH VIEW
+                </div>
+              </div>
+
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:14px; border-radius:6px; font-size:12px; color:#334155; line-height:1.5;">
+                <strong style="color:#0f172a; font-size:13px; display:block; margin-bottom:4px;">Radiological Findings Notes:</strong>
+                Cardiac silhouette is normal in size and configuration. Mediastinal structures are stable. Trachea is midline. Lungs are clear without focal infiltrates, pleural effusion or pneumothorax. Bony structures are intact.
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      openModal('lab-modal');
+    }
+
+    function printLabReport() {
+      window.print();
+    }
+  </script>
+</body>
+</html>

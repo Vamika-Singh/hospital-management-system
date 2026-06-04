@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — MediCare</title>
+  <meta name="description" content="Admin login portal for MediCare Hospital Management System." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <style>
+    .auth-page { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:calc(var(--header-height)+40px) 20px 40px; position:relative; }
+    .auth-bg { position:fixed; inset:0; background:radial-gradient(ellipse at 30% 40%, rgba(99,102,241,0.1) 0%, transparent 60%); pointer-events:none; }
+    .auth-card { width:100%; max-width:440px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:40px; position:relative; box-shadow:var(--shadow-lg); }
+    .auth-header { text-align:center; margin-bottom:32px; }
+    .auth-icon { width:60px; height:60px; background:linear-gradient(135deg,var(--accent),#8b5cf6); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 16px; }
+    .auth-header h1 { font-size:24px; margin-bottom:8px; }
+    .auth-header p { color:var(--text-secondary); font-size:14px; }
+    .auth-tabs { display:flex; background:var(--bg-base); border-radius:var(--radius-sm); padding:4px; margin-bottom:28px; border:1px solid var(--border); }
+    .auth-tab { flex:1; padding:8px; text-align:center; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-secondary); transition:var(--transition); text-decoration:none; }
+    .auth-tab.active { background:var(--bg-elevated); color:var(--text-primary); }
+    .error-alert { background:var(--danger-light); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); padding:12px 16px; color:#991b1b; font-size:13px; margin-bottom:20px; display:none; }
+    .error-alert.show { display:block; }
+    .admin-notice { background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.2); border-radius:var(--radius-sm); padding:12px 16px; font-size:13px; color:var(--accent); margin-bottom:20px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+  <div id="toast-container"></div>
+  <div class="auth-bg"></div>
+
+  <div class="auth-page">
+    <div class="auth-card animate-fade-in">
+      <div class="auth-header">
+        <div class="auth-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:white"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <h1>Admin Portal</h1>
+        <p>Authorized personnel only</p>
+      </div>
+
+      <div class="auth-tabs">
+        <a href="/pages/login.html" class="auth-tab">Patient Login</a>
+        <a href="/pages/admin-login.html" class="auth-tab active">Admin Login</a>
+      </div>
+
+      <div class="admin-notice" style="display: flex; align-items: center; gap: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Default: <strong>admin@hospital.com</strong> / <strong>password</strong></span>
+      </div>
+
+      <div class="error-alert" id="error-alert">Invalid admin credentials.</div>
+
+      <form id="admin-login-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">Admin Email</label>
+          <input type="email" id="email" class="form-control" placeholder="admin@hospital.com" autocomplete="email" />
+          <span class="form-error">Please enter a valid email address.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Admin password" autocomplete="current-password" />
+          <span class="form-error">Password is required.</span>
+        </div>
+
+        <button type="submit" class="btn btn-lg w-full" id="login-btn" style="margin-top:8px; background:linear-gradient(135deg,var(--accent),#8b5cf6); color:white;">
+          Secure Admin Sign In
+        </button>
+      </form>
+
+      <div style="text-align:center; margin-top:20px;">
+        <a href="/pages/index.html" style="font-size:13px; color:var(--text-secondary);">← Back to Website</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNavbar();
+      if (isLoggedIn() && isAdmin()) window.location.href = getCorrectUrl('/pages/admin/dashboard.html');
+    });
+
+    document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorAlert = document.getElementById('error-alert');
+      const loginBtn = document.getElementById('login-btn');
+
+      clearAllErrors('admin-login-form');
+      errorAlert.classList.remove('show');
+      let hasError = false;
+
+      if (!email || !validateEmail(email)) { showFieldError('email', 'Valid email required.'); hasError = true; }
+      if (!password) { showFieldError('password', 'Password is required.'); hasError = true; }
+      if (hasError) return;
+
+      loginBtn.classList.add('btn-loading');
+      loginBtn.disabled = true;
+
+      const res = await api.post('/auth/admin/login', { email, password });
+
+      loginBtn.classList.remove('btn-loading');
+      loginBtn.disabled = false;
+
+      if (res && res.success) {
+        setAuth(res.data.token, res.data.user);
+        showToast('success', 'Admin Access Granted', 'Redirecting to dashboard...');
+        setTimeout(() => window.location.href = getCorrectUrl('/pages/admin/dashboard.html'), 1000);
+      } else {
+        errorAlert.textContent = res?.message || 'Login failed.';
+        errorAlert.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>

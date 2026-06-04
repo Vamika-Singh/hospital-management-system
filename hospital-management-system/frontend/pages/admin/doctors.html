@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Doctors — MediCare Admin</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/components.css" />
+  <link rel="stylesheet" href="../../css/dashboard.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../../pages/index.html" class="sidebar-brand">
+          <div class="sidebar-brand-icon" style="width: 32px; height: 32px;"><svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#1a56db"/><path d="M20 10v20M10 20h20" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="20" cy="20" r="14" stroke="#60a5fa" stroke-width="1.5" opacity=".4"/></svg></div>
+          <span class="sidebar-brand-name">MediCare Admin</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Overview</div>
+          <a href="/pages/admin/dashboard.html" class="sidebar-link"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span> Dashboard</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Management</div>
+          <a href="/pages/admin/doctors.html" class="sidebar-link active"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span> Doctors</a>
+          <a href="/pages/admin/nurses.html" class="sidebar-link"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> Nurses</a>
+          <a href="/pages/admin/patients.html" class="sidebar-link"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> Patients</a>
+          <a href="/pages/admin/appointments.html" class="sidebar-link"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> Appointments</a>
+          <a href="/pages/admin/beds.html" class="sidebar-link"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 17V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12M9 8h6M9 12h6"></path></svg></span> Bed Occupancy</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Tools</div>
+          <a href="/pages/admin/announcement.html" class="sidebar-link"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></span> Announcement</a>
+          <a href="/pages/index.html" class="sidebar-link"><span class="link-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span> View Website</a>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar" id="sidebar-avatar">A</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name" id="sidebar-name">Admin</div>
+            <div class="sidebar-user-role">Administrator</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary w-full btn-sm" onclick="logout()">Logout</button>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <main class="dashboard-main">
+      <div class="dashboard-topbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+          <div class="topbar-title">Manage Doctors</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add Doctor</button>
+        </div>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-bar" style="max-width:300px;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-input" placeholder="Search doctors..." oninput="filterTable()" />
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="table" id="doctors-table">
+            <thead><tr>
+              <th>#</th><th>Name</th><th>Specialization</th><th>Experience</th><th>Fee</th><th>Available Days</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="doctors-tbody">
+              <tr><td colspan="8"><div class="loader"><div class="spinner"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Doctor Modal -->
+  <div class="modal-overlay" id="doctor-modal">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">Add New Doctor</div>
+        <button class="modal-close" onclick="closeModal('doctor-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="doctor-form" novalidate>
+          <input type="hidden" id="doctor-id" />
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Full Name *</label><input type="text" id="d-name" class="form-control" placeholder="Dr. Name" /></div>
+            <div class="form-group"><label class="form-label">Email *</label><input type="email" id="d-email" class="form-control" placeholder="doctor@hospital.com" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Specialization *</label><input type="text" id="d-spec" class="form-control" placeholder="e.g., Cardiologist" /></div>
+            <div class="form-group"><label class="form-label">Qualification</label><input type="text" id="d-qual" class="form-control" placeholder="e.g., MBBS, MD" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Experience (years)</label><input type="number" id="d-exp" class="form-control" min="0" /></div>
+            <div class="form-group"><label class="form-label">Phone</label><input type="tel" id="d-phone" class="form-control" /></div>
+          </div>
+          <div class="form-group"><label class="form-label">Bio</label><textarea id="d-bio" class="form-control" rows="2" placeholder="Brief description..."></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Available Days</label><input type="text" id="d-days" class="form-control" placeholder="Mon,Tue,Wed,Thu,Fri" /></div>
+            <div class="form-group"><label class="form-label">Consultation Fee (₹)</label><input type="number" id="d-fee" class="form-control" min="0" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Slot Start Time</label><input type="time" id="d-start" class="form-control" /></div>
+            <div class="form-group"><label class="form-label">Slot End Time</label><input type="time" id="d-end" class="form-control" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Slot Duration (mins)</label><input type="number" id="d-duration" class="form-control" min="10" /></div>
+            <div class="form-group"><label class="form-label">Status</label><select id="d-status" class="form-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('doctor-modal')">Cancel</button>
+        <button class="btn btn-primary" id="save-doctor-btn" onclick="saveDoctor()">Save Doctor</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="../../js/api.js"></script>
+  <script src="../../js/utils.js"></script>
+  <script>
+    let allDoctors = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      requireAdminLogin();
+      initSidebarToggle();
+      const user = getUser();
+      document.getElementById('sidebar-name').textContent = user.name;
+      document.getElementById('sidebar-avatar').textContent = user.name.charAt(0);
+      await loadDoctors();
+    });
+
+    async function loadDoctors() {
+      const res = await api.get('/admin/doctors', true);
+      if (!res || !res.success) { showToast('error', 'Error', 'Failed to load doctors.'); return; }
+      allDoctors = res.data;
+      renderTable(allDoctors);
+    }
+
+    function renderTable(doctors) {
+      const tbody = document.getElementById('doctors-tbody');
+      if (doctors.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👨‍⚕️</div><h3>No doctors found</h3></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = doctors.map(d => `
+        <tr>
+          <td>#${d.id}</td>
+          <td><strong>${d.name}</strong><br><span style="font-size:12px;color:var(--text-muted);">${d.email}</span></td>
+          <td>${d.specialization}</td>
+          <td>${d.experience_years} yrs</td>
+          <td>₹${parseFloat(d.fee).toFixed(0)}</td>
+          <td><div style="display:flex;gap:4px;flex-wrap:wrap;">${(d.available_days||'').split(',').map(day=>`<span class="day-pill">${day}</span>`).join('')}</div></td>
+          <td><span class="badge ${d.is_active ? 'badge-active' : 'badge-inactive'}">${d.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-secondary btn-sm" onclick="openEditModal(${d.id})">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteDoctor(${d.id}, '${d.name}')">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterTable() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const filtered = allDoctors.filter(d => d.name.toLowerCase().includes(q) || d.specialization.toLowerCase().includes(q) || d.email.toLowerCase().includes(q));
+      renderTable(filtered);
+    }
+
+    function openAddModal() {
+      document.getElementById('modal-title').textContent = 'Add New Doctor';
+      document.getElementById('doctor-form').reset();
+      document.getElementById('doctor-id').value = '';
+      document.getElementById('d-days').value = 'Mon,Tue,Wed,Thu,Fri';
+      document.getElementById('d-start').value = '09:00';
+      document.getElementById('d-end').value = '17:00';
+      document.getElementById('d-duration').value = '30';
+      document.getElementById('d-fee').value = '500';
+      document.getElementById('d-exp').value = '0';
+      document.getElementById('d-status').value = '1';
+      openModal('doctor-modal');
+    }
+
+    function openEditModal(id) {
+      const d = allDoctors.find(doc => doc.id === id);
+      if (!d) return;
+      document.getElementById('modal-title').textContent = 'Edit Doctor';
+      document.getElementById('doctor-id').value = d.id;
+      document.getElementById('d-name').value = d.name;
+      document.getElementById('d-email').value = d.email;
+      document.getElementById('d-spec').value = d.specialization;
+      document.getElementById('d-qual').value = d.qualification || '';
+      document.getElementById('d-exp').value = d.experience_years || 0;
+      document.getElementById('d-phone').value = d.phone || '';
+      document.getElementById('d-bio').value = d.bio || '';
+      document.getElementById('d-days').value = d.available_days || 'Mon,Tue,Wed,Thu,Fri';
+      document.getElementById('d-start').value = (d.slot_start||'09:00:00').substring(0,5);
+      document.getElementById('d-end').value = (d.slot_end||'17:00:00').substring(0,5);
+      document.getElementById('d-duration').value = d.slot_duration || 30;
+      document.getElementById('d-fee').value = d.fee || 500;
+      document.getElementById('d-status').value = d.is_active ? '1' : '0';
+      openModal('doctor-modal');
+    }
+
+    async function saveDoctor() {
+      const id = document.getElementById('doctor-id').value;
+      const btn = document.getElementById('save-doctor-btn');
+      const name = document.getElementById('d-name').value.trim();
+      const email = document.getElementById('d-email').value.trim();
+      const spec = document.getElementById('d-spec').value.trim();
+
+      if (!name || !email || !spec) { showToast('warning', 'Validation', 'Name, email and specialization are required.'); return; }
+
+      btn.classList.add('btn-loading'); btn.disabled = true;
+
+      const body = {
+        name, email, specialization: spec,
+        qualification: document.getElementById('d-qual').value.trim(),
+        experience_years: parseInt(document.getElementById('d-exp').value) || 0,
+        phone: document.getElementById('d-phone').value.trim(),
+        bio: document.getElementById('d-bio').value.trim(),
+        available_days: document.getElementById('d-days').value.trim() || 'Mon,Tue,Wed,Thu,Fri',
+        slot_start: document.getElementById('d-start').value + ':00',
+        slot_end: document.getElementById('d-end').value + ':00',
+        slot_duration: parseInt(document.getElementById('d-duration').value) || 30,
+        fee: parseFloat(document.getElementById('d-fee').value) || 500,
+        is_active: document.getElementById('d-status').value === '1'
+      };
+
+      const res = id
+        ? await api.put(`/admin/doctors/${id}`, body, true)
+        : await api.post('/admin/doctors', body, true);
+
+      btn.classList.remove('btn-loading'); btn.disabled = false;
+
+      if (res && res.success) {
+        closeModal('doctor-modal');
+        showToast('success', id ? 'Doctor Updated' : 'Doctor Added', res.message);
+        await loadDoctors();
+      } else {
+        showToast('error', 'Error', res?.message || 'Failed to save doctor.');
+      }
+    }
+
+    async function deleteDoctor(id, name) {
+      if (!confirm(`Are you sure you want to remove Dr. ${name}? This cannot be undone.`)) return;
+      const res = await api.delete(`/admin/doctors/${id}`, true);
+      if (res && res.success) {
+        showToast('success', 'Doctor Removed', `Dr. ${name} has been removed.`);
+        await loadDoctors();
+      } else {
+        showToast('error', 'Error', res?.message || 'Failed to delete doctor.');
+      }
+    }
+  </script>
+</body>
+</html>

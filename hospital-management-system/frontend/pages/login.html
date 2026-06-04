@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Login — MediCare</title>
+  <meta name="description" content="Log in to your MediCare patient account to manage appointments and health records." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: calc(var(--header-height) + 40px) 20px 40px;
+      position: relative;
+    }
+
+    .auth-bg {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 40%, rgba(14,165,233,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 70%, rgba(99,102,241,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      position: relative;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-icon {
+      width: 60px; height: 60px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      margin: 0 auto 16px;
+    }
+
+    .auth-header h1 { font-size: 24px; margin-bottom: 8px; }
+    .auth-header p { color: var(--text-secondary); font-size: 14px; }
+
+    .auth-tabs {
+      display: flex;
+      background: var(--bg-base);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .auth-tab.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider span { font-size: 12px; color: var(--text-muted); }
+
+    .error-alert {
+      background: var(--danger-light);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      color: #991b1b;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-alert.show { display: block; }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+  <div id="toast-container"></div>
+  <div class="auth-bg"></div>
+
+  <div class="auth-page">
+    <div class="auth-card animate-fade-in">
+      <div class="auth-header">
+        <div class="auth-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:white"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h1>Welcome Back</h1>
+        <p>Sign in to your MediCare account</p>
+      </div>
+
+      <div class="auth-tabs">
+        <a href="/pages/login.html" class="auth-tab active" id="patient-tab">Patient Login</a>
+        <a href="/pages/admin-login.html" class="auth-tab" id="admin-tab">Admin Login</a>
+      </div>
+
+      <div class="error-alert" id="error-alert">Invalid email or password. Please try again.</div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" class="form-control" placeholder="your@email.com" autocomplete="email" />
+          <span class="form-error">Please enter a valid email address.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Enter your password" autocomplete="current-password" />
+          <span class="form-error">Password is required.</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn" style="margin-top:8px;">
+          Sign In →
+        </button>
+      </form>
+
+      <div class="divider"><span>Don't have an account?</span></div>
+
+      <a href="/pages/register.html" class="btn btn-secondary w-full" style="justify-content:center;">
+        Create Patient Account
+      </a>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNavbar();
+      redirectIfLoggedIn();
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorAlert = document.getElementById('error-alert');
+      const loginBtn = document.getElementById('login-btn');
+
+      // Client-side validation
+      clearAllErrors('login-form');
+      errorAlert.classList.remove('show');
+      let hasError = false;
+
+      if (!email || !validateEmail(email)) {
+        showFieldError('email', 'Please enter a valid email address.');
+        hasError = true;
+      }
+      if (!password) {
+        showFieldError('password', 'Password is required.');
+        hasError = true;
+      }
+      if (hasError) return;
+
+      loginBtn.classList.add('btn-loading');
+      loginBtn.disabled = true;
+
+      const res = await api.post('/auth/login', { email, password });
+
+      loginBtn.classList.remove('btn-loading');
+      loginBtn.disabled = false;
+
+      if (res && res.success) {
+        setAuth(res.data.token, res.data.user);
+        showToast('success', 'Welcome back!', `Hello, ${res.data.user.name.split(' ')[0]}! Redirecting...`);
+        setTimeout(() => window.location.href = getCorrectUrl('/pages/patient-dashboard.html'), 1000);
+      } else {
+        errorAlert.textContent = res?.message || 'Login failed. Please try again.';
+        errorAlert.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>
