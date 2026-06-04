@@ -157,7 +157,18 @@
       errorAlert.classList.remove('show');
       let hasError = false;
 
-      if (!name) { showFieldError('name', 'Full name is required.'); hasError = true; }
+      const nameRegex = /^[a-zA-Z\s'.]+$/;
+      if (!name) {
+        showFieldError('name', 'Full name is required.');
+        hasError = true;
+      } else if (name.length < 2) {
+        showFieldError('name', 'Name must be at least 2 characters long.');
+        hasError = true;
+      } else if (!nameRegex.test(name)) {
+        showFieldError('name', 'Name can only contain letters, spaces, dots, or apostrophes.');
+        hasError = true;
+      }
+
       if (!email || !validateEmail(email)) { showFieldError('email', 'Valid email is required.'); hasError = true; }
       if (!password || password.length < 6) { showFieldError('password', 'Password must be at least 6 characters.'); hasError = true; }
       if (phone && !validatePhone(phone)) { showFieldError('phone', 'Enter a valid 10-digit mobile number.'); hasError = true; }
