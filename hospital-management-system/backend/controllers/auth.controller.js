@@ -12,6 +12,13 @@ const registerPatient = async (req, res) => {
     if (!name || !email || !password) {
       return errorResponse(res, 'Name, email and password are required.', 400);
     }
+    const nameRegex = /^[a-zA-Z\s'.]+$/;
+    if (name.trim().length < 2) {
+      return errorResponse(res, 'Name must be at least 2 characters long.', 400);
+    }
+    if (!nameRegex.test(name)) {
+      return errorResponse(res, 'Name can only contain letters, spaces, dots, or apostrophes.', 400);
+    }
     if (password.length < 6) {
       return errorResponse(res, 'Password must be at least 6 characters.', 400);
     }
